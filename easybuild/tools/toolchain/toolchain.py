@@ -1032,9 +1032,32 @@ class Toolchain(object):
                 # prepend location to this wrapper to $PATH
                 setvar('PATH', '%s:%s' % (wrapper_dir, os.getenv('PATH')))
 
+                # create the wrappers
+                self.create_rpath_wrappers(wrappers_dir)
+
                 self.log.info("RPATH wrapper script for %s: %s (log: %s)", orig_cmd, which(cmd), rpath_wrapper_log)
             else:
                 self.log.debug("Not installing RPATH wrapper for non-existing command '%s'", cmd)
+
+    def create_rpath_wrappers(targetdir):
+        """
+        Iterate through the wrappers and move them from the tempdir. 
+
+        :param targetdir: destination directory of wrappers 
+        """
+
+        # Find location of rpath wrappers. Tempfile in prepare_rpath_wrappers seems to be
+        # in a parent directory of our current gettempdir()-location
+        tempfile_path = os.path.join(tempfile.gettempdir(), "tmp*", RPATH_WRAPPERS_SUBDIR)
+        wrapperpath = glob.glob(tempfile_path)[0]
+     
+        # create wrapper directory if it doesn't exist already
+        os.path.isdir(targetdir) or os.mkdir(targetdir)
+
+        for wrapper in os.listdir(wrapperpath):
+            filename = os.listdir(os.path.join(wrapperpath, wrapper))[0]
+            filepath = os.path.join(wrapperpath, wrapper, filename)
+            move_file(filepath, os.path.join(targetdir, filename))
 
     def handle_sysroot(self):
         """
